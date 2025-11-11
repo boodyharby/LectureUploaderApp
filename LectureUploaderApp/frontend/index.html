@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>منصة المحاضرات</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="manifest" href="/manifest.json" />
+</head>
+<body>
+  <header class="container header">
+    <h1>منصة المحاضرات</h1>
+  </header>
+  <main class="container card">
+    <h2>اختر الدور</h2>
+    <div class="grid-2">
+      <section>
+        <h3>طالب</h3>
+        <input id="studentName" placeholder="اكتب اسمك" />
+        <button id="studentLogin">دخول</button>
+      </section>
+      <section id="teacherSection" style="display:none">
+        <h3>معلم</h3>
+        <input id="teacherName" placeholder="اسم المعلم" />
+        <input id="teacherSecret" placeholder="الرقم السري" type="password" />
+        <button id="teacherLogin">دخول المعلم</button>
+      </section>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+  <script src="/summaries.js"></script>
+  <script>
+    attachIndexHandlers();
+    if(window.attachTeacherRevealHandlers) attachTeacherRevealHandlers();
+    if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('/service-worker.js'); }catch(_){}}
+  </script>
+</body>
+</html>

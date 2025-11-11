@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>واجهة الطالب</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="manifest" href="/manifest.json" />
+</head>
+<body>
+  <header class="container header">
+    <h1>المحاضرات</h1>
+    <nav>
+      <a href="/index.html">الرئيسية</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card" style="margin-bottom:12px">
+      <div class="tabs">
+        <button class="tab active" data-cat="">الكل</button>
+        <button class="tab" data-cat="محاضرة">محاضرات</button>
+        <button class="tab" data-cat="سكشن">سكاشن</button>
+        <button class="tab" data-cat="ملخص">ملخصات</button>
+      </div>
+    </div>
+    <section class="card" style="margin-bottom:12px">
+      <h3>المواد</h3>
+      <div id="subjectsGrid" class="grid" style="margin-top:10px"></div>
+    </section>
+    <section id="subjectDetail" class="card" style="display:none;margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="backToSubjects" class="btn">رجوع</button>
+          <h3 id="subjectTitle">—</h3>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-subcat="">الكل</button>
+          <button class="tab" data-subcat="محاضرة">محاضرات</button>
+          <button class="tab" data-subcat="سكشن">سكاشن</button>
+          <button class="tab" data-subcat="ملخص">ملخصات</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <h4>السكاشن</h4>
+        <div id="sectionsGrid" class="grid" style="margin-top:10px"></div>
+      </div>
+      <div id="subjectLectures" class="grid" style="margin-top:14px"></div>
+    </section>
+    <section class="filters card">
+      <input id="q" placeholder="بحث في العنوان أو الوصف" />
+      <input id="subject" placeholder="المادة" />
+      <input id="type" placeholder="النوع" />
+      <select id="sort" class="accent">
+        <option value="created_at_desc">الأحدث</option>
+        <option value="created_at_asc">الأقدم</option>
+        <option value="name_asc">الاسم تصاعدي</option>
+        <option value="name_desc">الاسم تنازلي</option>
+      </select>
+      <button id="applyFilters" class="btn">تطبيق</button>
+    </section>
+
+    <section id="lectures" class="grid"></section>
+
+    <section class="card" style="margin-top:14px">
+      <h3>ملفات الطالب</h3>
+      <div id="studentFilesDrop" class="drop">اسحب وأفلت ملفاتك هنا أو اخترها</div>
+      <input id="studentFilesInput" type="file" multiple hidden />
+      <div id="myFiles" class="grid" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <h3>سجل المشاهدة</h3>
+      <div id="viewedList" class="grid" style="margin-top:10px"></div>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+  <!-- Viewer modal moved from app.js -->
+  <div id="viewerModal" style="position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px">
+    <div style="background:#111;border:1px solid #333;max-width:90vw;width:900px;max-height:90vh;border-radius:10px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #333;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button id="viewerPrev" class="btn">السابق</button>
+          <button id="viewerNext" class="btn">التالي</button>
+          <button id="viewerFs" class="btn">ملء الشاشة</button>
+        </div>
+        <strong id="viewerTitle" style="font-size:16px;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></strong>
+        <button id="viewerClose" class="btn">إغلاق</button>
+      </div>
+      <div id="viewerBody" style="flex:1;overflow:auto;background:#000"></div>
+    </div>
+  </div>
+  <!-- Templates -->
+  <template id="tmpl-lecture-card-student">
+    <div class="lecture col gap-6">
+      <div class="row between v-center wrap gap-8">
+        <h4 data-title style="margin:0"></h4>
+        <div class="row wrap gap-6">
+          <button class="btn" data-view>عرض</button>
+          <a class="btn" target="_blank" data-ext>عرض خارجي</a>
+          <a class="btn" data-download>تحميل</a>
+          <button class="btn" data-like>إعجاب</button>
+          <button class="btn" data-comments>تعليقات</button>
+        </div>
+      </div>
+      <div class="meta"><span data-subject></span> • <span data-type></span> • <span data-created></span> • <span data-views>0 مشاهدة</span> • <span data-likes>0 إعجاب</span> • <span data-comments-count>0 تعليق</span> • <span data-dl>0 تنزيل</span></div>
+    </div>
+  </template>
+  <script>window.API_BASE = 'http://localhost:3000';</script>
+  <script src="/app.js"></script>
+  <script src="/student-files.js"></script>
+  <script src="/summaries.js"></script>
+  <script>
+    attachStudentHandlers();
+    if (window.attachStudentFilesHandlers) attachStudentFilesHandlers();
+    if (window.attachSummariesHandlers) attachSummariesHandlers();
+    if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('/service-worker.js'); }catch(_){}}
+  </script>
+</body>
+</html>

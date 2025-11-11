@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>لوحة المعلم</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="manifest" href="/manifest.json" />
+</head>
+<body>
+  <header class="container header">
+    <h1>لوحة المعلم</h1>
+    <nav>
+      <a href="/index.html">الرئيسية</a>
+      <a href="/student.html">واجهة الطالب</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section id="notificationsPanel" class="card" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0">التنبيهات</h3>
+        <button id="markSeenBtn" class="btn">تمييز كمقروء</button>
+      </div>
+  <!-- Templates -->
+  <template id="tmpl-lecture-card-teacher">
+    <div class="lecture" style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+        <h4 data-title style="margin:0"></h4>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" data-view>عرض</button>
+          <a class="btn" target="_blank" data-ext>عرض خارجي</a>
+          <a class="btn" data-download>تحميل</a>
+          <button class="btn" data-edit>تعديل</button>
+          <button class="btn" data-delete>حذف</button>
+          <button class="btn" data-copy>نسخ رابط</button>
+        </div>
+      </div>
+      <div class="meta"><span data-subject></span> • <span data-type></span> • <span data-views>0 مشاهدة</span> • <span data-likes>0 إعجاب</span> • <span data-comments-count>0 تعليق</span></div>
+    </div>
+  </template>
+  <template id="tmpl-notification">
+    <div class="lecture">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong data-message></strong>
+          <div class="meta" data-meta></div>
+        </div>
+        <span class="badge" data-level>info</span>
+      </div>
+    </div>
+  </template>
+      <div id="notificationsList" class="grid" style="margin-top:10px"></div>
+    </section>
+    <section class="card">
+      <h3>رفع محاضرة</h3>
+      <form id="uploadForm">
+        <input name="title" placeholder="العنوان" required />
+        <input name="description" placeholder="الوصف" />
+        <input name="subject" placeholder="المادة" list="subjectList" />
+        <input name="section" placeholder="السكشن" list="sectionList" />
+        <datalist id="subjectList"></datalist>
+        <datalist id="sectionList"></datalist>
+        <select name="type" class="accent">
+          <option value="">النوع</option>
+          <option value="محاضرة">محاضرة</option>
+          <option value="سكشن">سكشن</option>
+          <option value="ملخص">ملخص</option>
+        </select>
+        <select name="visibility" class="accent">
+          <option value="public">عام</option>
+          <option value="link">برابط</option>
+          <option value="private">خاص</option>
+        </select>
+        <div id="dropArea" class="drop">اسحب وأفلت الملف هنا أو اختره</div>
+        <input id="fileInput" name="file" type="file" hidden />
+        <button type="submit">رفع</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3>المحاضرات</h3>
+      <div id="teacherLectures" class="grid"></div>
+    </section>
+
+    <section id="studentsAdmin" class="card" style="display:none">
+      <h3>ملفات الطلاب</h3>
+      <div id="studentsList" class="grid" style="margin-top:10px"></div>
+    </section>
+
+    <section id="sectionsAdmin" class="card" style="display:none">
+      <h3>إدارة السكاشن</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <input name="subject" placeholder="المادة" />
+        <input name="from" placeholder="من سكشن" />
+        <input name="to" placeholder="إلى سكشن" />
+        <button id="mergeSectionBtn" class="btn">دمج</button>
+        <button id="deleteSectionBtn" class="btn btn-danger">حذف سكشن</button>
+      </div>
+      <div class="meta" style="margin-top:6px">يمكنك دمج سكشن في آخر أو حذف سكشن من المادة.</div>
+    </section>
+
+    <section id="allStudentFiles" class="card" style="display:none">
+      <h3>كل ملفات الطلاب</h3>
+      <div id="allStudentFilesList" class="grid" style="margin-top:10px"></div>
+    </section>
+
+    <section id="ownerAdmin" class="card" style="display:none">
+      <h3>إدارة المعلمين</h3>
+      <form id="addTeacherForm" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input name="username" placeholder="اسم المعلم" />
+        <input name="secret" placeholder="الرقم السري" />
+        <button type="submit">إضافة</button>
+      </form>
+      <div id="teachersList" class="grid" style="margin-top:10px"></div>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+  <!-- Viewer modal moved from app.js -->
+  <div id="viewerModal" style="position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px">
+    <div style="background:#111;border:1px solid #333;max-width:90vw;width:900px;max-height:90vh;border-radius:10px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #333;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button id="viewerPrev" class="btn">السابق</button>
+          <button id="viewerNext" class="btn">التالي</button>
+          <button id="viewerFs" class="btn">ملء الشاشة</button>
+        </div>
+        <strong id="viewerTitle" style="font-size:16px;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></strong>
+        <button id="viewerClose" class="btn">إغلاق</button>
+      </div>
+      <div id="viewerBody" style="flex:1;overflow:auto;background:#000"></div>
+    </div>
+  </div>
+  <script>window.API_BASE = 'http://localhost:3000';</script>
+  <script src="/app.js"></script>
+  <script src="/summaries.js"></script>
+  <script src="/comments-admin.js"></script>
+  <script src="/sections-admin.js"></script>
+  <script>
+    attachTeacherHandlers();
+    if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('/service-worker.js'); }catch(_){}}
+    if (window.attachSummariesHandlers) attachSummariesHandlers();
+    if (window.attachCommentsAdmin) attachCommentsAdmin();
+    if (window.attachSectionsAdmin) attachSectionsAdmin();
+  </script>
+</body>
+</html>

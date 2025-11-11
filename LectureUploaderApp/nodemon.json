@@ -1,0 +1,16 @@
+{
+  "watch": [
+    "server/**/*.js",
+    "public/**/*.js",
+    "public/**/*.html",
+    "public/**/*.css",
+    "package.json"
+  ],
+  "ignore": [
+    "server/db.json",
+    "uploads/**",
+    "data/**"
+  ],
+  "ext": "js,json,html,css",
+  "exec": "node server/server.js"
+}

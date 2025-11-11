@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: lecture-uploader-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: bash render-start.sh
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TEACHER_SECRET
+        sync: false
+      - key: OWNER_USERNAME
+        sync: false
+    disks:
+      - name: data
+        mountPath: /opt/persist
+        sizeGB: 5
