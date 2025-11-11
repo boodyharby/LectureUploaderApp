@@ -1,35 +1,10 @@
 function toast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-// Route API calls to external backend if window.API_BASE is set
-try{
-  const _origFetch=window.fetch.bind(window);
-  window.fetch=(input, init)=>{
-    try{
-      if(typeof input==='string' && input.startsWith('/api/')){
-        const base=(window.API_BASE||'');
-        return _origFetch(base+input, init);
-      }
-      if(input && typeof input==='object' && input.url){
-        const url=String(input.url||'');
-        const originPrefix=location.origin+'/api/';
-        if(url.startsWith(originPrefix)){
-          const u=new URL(url);
-          const base=(window.API_BASE||'');
-          const dest=base+u.pathname+u.search;
-          return _origFetch(dest, init||input);
-        }
-      }
-    }catch(_){/* ignore */}
-    return _origFetch(input, init);
-  };
-}catch(_){/* ignore */}
 function setTheme(){document.documentElement.classList.add('dark');}
 function initTheme(){setTheme();}
 
 // Lightweight viewer modal
 let _viewerCtx={ items:[], index:0 };
 let _viewerKeyHandler=null;
-// Updates channel for instant refresh across tabs/pages
-let _updatesChan=null; try{ _updatesChan=new BroadcastChannel('lu-updates'); }catch(_){ _updatesChan=null; }
 function tpl(id){ const t=document.getElementById(id); return t? t.content.firstElementChild.cloneNode(true): null; }
 function ensureViewer(){
   let m=document.getElementById('viewerModal');
@@ -148,25 +123,6 @@ function attachIndexHandlers(){
     const uname=sp.get('username');
     if(uname){ const tn=document.getElementById('teacherName'); if(tn) tn.value=uname; }
   }catch(_){/* ignore */}
-
-  // listen for instant updates from teacher actions
-  try{
-    if(_updatesChan){
-      _updatesChan.onmessage=(ev)=>{
-        const msg=ev.data||{};
-        if(msg.type==='lecture_added' || msg.type==='lecture_updated' || msg.type==='lecture_deleted'){
-          const currentType = category || typeInput?.value || '';
-          renderLectures(c,{ q:q.value, subject:subject.value, type:currentType, sort:sort.value });
-        }
-        if(msg.type==='sections_changed'){
-          // reload subjects grid and sections panel if present
-          const grid=document.getElementById('subjectsGrid'); if(grid){
-            (async()=>{ try{ const r=await fetch('/api/subjects'); const data=await r.json(); grid.innerHTML=''; data.items.forEach(s=>{/* minimal rebuild */ const el=document.createElement('div'); el.className='lecture'; el.style.cursor='pointer'; el.innerHTML=`<div><h4>📁 ${s.subject}</h4><div class="meta">إجمالي: ${s.total}</div></div>`; el.onclick=()=>{ subject.value=s.subject; const currentType = category || typeInput?.value || ''; renderLectures(c,{ q:q.value, subject:subject.value, type:currentType, sort:sort.value }); }; grid.appendChild(el); }); }catch(_){}})();
-          }
-        }
-      };
-    }
-  }catch(_){/* ignore */}
 }
 
 async function renderLectures(container, query={}){
@@ -257,14 +213,6 @@ async function attachStudentHandlers(){
   const share=new URLSearchParams(location.search).get('share');
   renderLectures(c, share?{}:{});
 
-  // periodic refresh every 60s
-  try{
-    setInterval(()=>{
-      const currentType = category || typeInput?.value || '';
-      renderLectures(c,{ q:q.value, subject:subject.value, type:currentType, sort:sort.value });
-    }, 60000);
-  }catch(_){/* ignore */}
-
   // Subjects grid
   (async()=>{
     try{
@@ -274,8 +222,66 @@ async function attachStudentHandlers(){
       data.items.forEach(s=>{
         const el=document.createElement('div'); el.className='lecture';
         el.style.cursor='pointer';
-        el.innerHTML=`<div><h4>📁 ${s.subject}</h4><div class="meta">إجمالي: ${s.total}</div></div>`;
-        el.onclick=()=>{ subject.value=s.subject; const currentType = category || typeInput?.value || ''; renderLectures(c,{ q:q.value, subject:subject.value, type:currentType, sort:sort.value }); };
+        el.innerHTML=`<div>
+          <h4>📁 ${s.subject}</h4>
+          <div class="meta">إجمالي: ${s.total}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="badge">محاضرات: ${s.byType['محاضرة']||0}</span>
+            <span class="badge">سكاشن: ${s.byType['سكشن']||0}</span>
+            <span class="badge">ملخصات: ${s.byType['ملخص']||0}</span>
+          </div>
+        </div>`;
+        el.onclick=()=>{
+          // Show subject detail section
+          const gridCard=document.getElementById('subjectsGrid')?.parentElement;
+          const detail=document.getElementById('subjectDetail');
+          const subjTitle=document.getElementById('subjectTitle');
+          const subjList=document.getElementById('subjectLectures');
+          if(gridCard&&detail&&subjTitle&&subjList){
+            gridCard.style.display='none';
+            detail.style.display='block';
+            subjTitle.textContent = s.subject;
+            // sub-tabs handler
+            let subcat='';
+            let sectionFilter='';
+            const subs=detail.querySelectorAll('[data-subcat]');
+            const render=()=>renderLectures(subjList,{q:'',subject:s.subject,section:sectionFilter,type:subcat,sort:sort.value});
+            subs.forEach(btn=>{
+              btn.onclick=()=>{ subs.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); subcat=btn.getAttribute('data-subcat')||''; render(); };
+            });
+            // load sections grid
+            (async()=>{
+              try{
+                const rr=await fetch(`/api/subjects/${encodeURIComponent(s.subject)}/sections`);
+                const sd=await rr.json();
+                const sGrid=document.getElementById('sectionsGrid');
+                if(sGrid){ sGrid.innerHTML='';
+                  sd.items.forEach(sec=>{
+                    const card=document.createElement('div'); card.className='lecture'; card.style.cursor='pointer';
+                    card.innerHTML=`<div>
+                      <h4>📂 ${sec.section}</h4>
+                      <div class="meta">إجمالي: ${sec.total}</div>
+                      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+                        <span class="badge">محاضرات: ${sec.byType['محاضرة']||0}</span>
+                        <span class="badge">سكاشن: ${sec.byType['سكشن']||0}</span>
+                        <span class="badge">ملخصات: ${sec.byType['ملخص']||0}</span>
+                      </div>
+                    </div>`;
+                    card.onclick=()=>{ sectionFilter = sec.section; render(); };
+                    sGrid.appendChild(card);
+                  });
+                }
+              }catch(_){/* ignore */}
+            })();
+            render();
+            const back=document.getElementById('backToSubjects');
+            if(back){ back.onclick=()=>{ detail.style.display='none'; if(gridCard) gridCard.style.display='block'; sectionFilter=''; }; }
+          } else {
+            // Fallback to normal filtering
+            subject.value = s.subject;
+            renderLectures(c,{q:q.value,subject:subject.value,type:category||typeInput?.value||'',sort:sort.value});
+          }
+        };
         grid.appendChild(el);
       });
     }catch(_){/* ignore */}
@@ -351,14 +357,12 @@ function attachTeacherHandlers(){
     uploadBusy=true;
     const r=await fetch('/api/lectures',{method:'POST',body:form,credentials:'include'});
     if(!r.ok){toast('فشل الرفع - تأكد من صلاحيات المعلم');return}
-    const d=await r.json();
     toast('تم رفع المحاضرة');
     loadTeacherLectures();
     if(window.refreshNotifications) try{ window.refreshNotifications(); }catch(_){/* ignore */}
     e.target.reset();
     uploadBusy=false;
     if(submitBtn) submitBtn.disabled=false;
-    try{ _updatesChan && _updatesChan.postMessage({ type:'lecture_added', payload:{ id:d?.lecture?.id } }); }catch(_){/* ignore */}
   };
   loadTeacherLectures();
 
@@ -557,14 +561,12 @@ async function loadTeacherLectures(){
       await fetch(`/api/lectures/${l.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({title})});
       toast('تم التحديث');
       loadTeacherLectures();
-      try{ _updatesChan && _updatesChan.postMessage({ type:'lecture_updated', payload:{ id:l.id } }); }catch(_){/* ignore */}
     };
     const del=el.querySelector('[data-delete]'); if(del) del.onclick=async()=>{
       if(!confirm('حذف المحاضرة؟')) return;
       await fetch(`/api/lectures/${l.id}`,{method:'DELETE',credentials:'include'});
       toast('تم الحذف');
       loadTeacherLectures();
-      try{ _updatesChan && _updatesChan.postMessage({ type:'lecture_deleted', payload:{ id:l.id } }); }catch(_){/* ignore */}
     };
     const viewBtn=el.querySelector('[data-view]'); if(viewBtn) viewBtn.onclick=()=>openViewer(`/uploads/${l.filename}`, l.title||l.original_name||'', seq, idx);
     c.appendChild(el);

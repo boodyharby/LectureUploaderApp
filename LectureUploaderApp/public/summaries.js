@@ -26,14 +26,6 @@
     const m=a.getAttribute('href').match(/\/api\/lectures\/(\d+)/);
     return m?Number(m[1]):null;
   }
-  function findLectureCardById(roots, id){
-    for(const root of roots){
-      if(!root) continue;
-      const cards=[...root.querySelectorAll('.lecture')];
-      for(const el of cards){ const lid=extractLectureId(el); if(lid===Number(id)) return el; }
-    }
-    return null;
-  }
   function inTeacherPanel(el){
     let n=el; while(n){ if(n.id==='teacherLectures') return true; n=n.parentElement; }
     return false;
@@ -103,9 +95,7 @@
           db.onclick=async()=>{
             if(busy) return; if(!confirm('حذف هذا الملخص؟')) return; busy=true; updateStatus('جارٍ الحذف...');
             await fetch(`/api/lectures/${lectureId}/summaries/${s.id}`,{method:'DELETE',credentials:'include'});
-            busy=false; updateStatus('');
-            try{ chan && chan.postMessage({ type:'summaries_changed', payload:{ lectureId } }); }catch(_){/* ignore */}
-            container.innerHTML=''; loadSummariesInto(container, lectureId, me);
+            busy=false; updateStatus(''); container.innerHTML=''; loadSummariesInto(container, lectureId, me);
           };
         }
         list.appendChild(row);
@@ -125,9 +115,7 @@
             if(!confirm('حذف العناصر المحددة؟')) return; busy=true; updateStatus('جارٍ الحذف...');
             const ids=[...selected];
             for(const id of ids){ await fetch(`/api/lectures/${lectureId}/summaries/${id}`,{method:'DELETE',credentials:'include'}); }
-            busy=false; updateStatus('تم الحذف');
-            try{ chan && chan.postMessage({ type:'summaries_changed', payload:{ lectureId } }); }catch(_){/* ignore */}
-            container.innerHTML=''; loadSummariesInto(container, lectureId, me);
+            busy=false; updateStatus('تم الحذف'); container.innerHTML=''; loadSummariesInto(container, lectureId, me);
           };
         }
       }
@@ -143,10 +131,7 @@
       const files=e.target.files||[]; if(!files.length) return;
       const fd=new FormData(); Array.from(files).forEach(f=>fd.append('files', f));
       const r=await fetch(`/api/lectures/${lectureId}/summaries`,{method:'POST',body:fd,credentials:'include'});
-      if(r.ok){ if(window.toast) toast('تم رفع الملخصات');
-        try{ chan && chan.postMessage({ type:'summaries_changed', payload:{ lectureId } }); }catch(_){/* ignore */}
-        container.innerHTML=''; loadSummariesInto(container, lectureId, me);
-      }
+      if(r.ok){ if(window.toast) toast('تم رفع الملخصات'); container.innerHTML=''; loadSummariesInto(container, lectureId, me); }
       input.value='';
     };
     return wrap;
@@ -201,7 +186,6 @@
     el.appendChild(sec);
     if(inTeacherPanel(el)) buildPrivacyUI(el, id, me);
   }
-  let chan=null; try{ chan=new BroadcastChannel('lu-updates'); }catch(_){ chan=null; }
   async function attachSummariesHandlers(){
     const me=await getMe();
     const roots=[document.getElementById('lectures'), document.getElementById('teacherLectures'), document.getElementById('subjectLectures')].filter(Boolean);
@@ -217,17 +201,6 @@
     // observe mutations to enhance newly rendered cards only within known roots
     const obs=new MutationObserver(()=>apply());
     roots.forEach(root=>obs.observe(root,{childList:true,subtree:true}));
-    try{
-      if(chan){
-        chan.onmessage=(ev)=>{
-          const msg=ev.data||{};
-          if(msg.type==='summaries_changed' && msg.payload && msg.payload.lectureId){
-            const card=findLectureCardById(roots, msg.payload.lectureId);
-            if(card){ const sec=card.querySelector('[data-summaries]'); if(sec){ loadSummariesInto(sec, msg.payload.lectureId, me); } }
-          }
-        };
-      }
-    }catch(_){/* ignore */}
   }
   window.attachSummariesHandlers=attachSummariesHandlers;
   window.attachTeacherRevealHandlers=attachTeacherRevealHandlers;

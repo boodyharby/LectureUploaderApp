@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "Web app for uploading and viewing lectures (students/teachers) with RTL support.",
-  "main": "backend/server.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js"
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

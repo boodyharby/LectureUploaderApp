@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>واجهة الطالب</title>
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="manifest" href="/manifest.json" />
 </head>
 <body>
   <header class="container header">
@@ -105,7 +104,6 @@
       <div class="meta"><span data-subject></span> • <span data-type></span> • <span data-created></span> • <span data-views>0 مشاهدة</span> • <span data-likes>0 إعجاب</span> • <span data-comments-count>0 تعليق</span> • <span data-dl>0 تنزيل</span></div>
     </div>
   </template>
-  <script>window.API_BASE = 'http://localhost:3000';</script>
   <script src="/app.js"></script>
   <script src="/student-files.js"></script>
   <script src="/summaries.js"></script>
@@ -113,7 +111,6 @@
     attachStudentHandlers();
     if (window.attachStudentFilesHandlers) attachStudentFilesHandlers();
     if (window.attachSummariesHandlers) attachSummariesHandlers();
-    if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('/service-worker.js'); }catch(_){}}
   </script>
 </body>
 </html>

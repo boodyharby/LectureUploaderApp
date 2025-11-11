@@ -14,8 +14,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'very-secret-key-change';
 const TEACHER_SECRET = process.env.TEACHER_SECRET || '01270792033';
 const OWNER_USERNAME = process.env.OWNER_USERNAME || 'عبدالرحمن حربي';
 
-// ensure uploads dir (now under backend/uploads)
-const uploadsDir = path.join(__dirname, 'uploads');
+// ensure uploads dir
+const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // storage
@@ -54,7 +54,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
